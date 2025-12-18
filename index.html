@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MyFlix Owner Edition</title>
+<style>
+:root {
+  --netflix-black: #141414;
+  --netflix-red: #e50914;
+}
+* {box-sizing:border-box;}
+body, html {margin:0; padding:0; background:var(--netflix-black); font-family:Arial,sans-serif; color:white;}
+
+/* HEADER */
+.header {display:flex; justify-content:space-between; align-items:center; padding:15px 30px; background:var(--netflix-black); position:sticky; top:0; z-index:100;}
+.header .logo {font-size:28px; font-weight:bold; color:var(--netflix-red); cursor:pointer;}
+.header .search-bar {display:flex; align-items:center;}
+.header .search-bar input {
+  padding:8px 12px;
+  border-radius:20px;
+  border:none;
+  background:#333;
+  color:white;
+  width:200px;
+  transition:width 0.3s;
+  font-size:14px;
+}
+.header .search-bar input:focus {outline:none; width:300px;}
+
+/* HERO */
+.hero {position:relative; height:350px; background:linear-gradient(to top, var(--netflix-black), transparent), linear-gradient(to bottom, var(--netflix-black), transparent), url('https://via.placeholder.com/1600x700'); background-size:cover; background-position:center; display:flex; flex-direction:column; justify-content:flex-end; padding:30px;}
+.hero h1 {font-size:42px; margin:0 0 10px 0;}
+.hero .hero-buttons button {background:var(--netflix-red); border:none; padding:10px 18px; margin-right:10px; color:white; border-radius:4px; cursor:pointer;}
+.hero .hero-buttons button:hover {background:#ff1414;}
+
+/* FILTERS */
+.filters {padding:15px 30px; display:flex; gap:10px;}
+.filters button {background:#1f1f1f; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer;}
+.filters button:hover {background:var(--netflix-red);}
+
+/* CATEGORY ROW */
+.category {padding:15px 30px;}
+.category h2 {margin:0 0 10px 0; font-size:20px;}
+.row {display:flex; overflow-x:auto; gap:10px; padding-bottom:10px;}
+.row::-webkit-scrollbar {display:none;}
+.card {min-width:160px; flex:0 0 auto; cursor:pointer; transition:transform .3s; position:relative;}
+.card img {width:100%; border-radius:6px;}
+.card:hover {transform:scale(1.1); z-index:10;}
+.card .title {font-size:14px; margin-top:5px; text-align:center;}
+.editBtn {position:absolute; top:5px; right:5px; background:var(--netflix-red); border:none; border-radius:4px; color:white; padding:2px 5px; cursor:pointer; font-size:12px;}
+.addBtn {background:var(--netflix-red); border:none; padding:6px 10px; border-radius:4px; cursor:pointer; color:white; margin-bottom:10px;}
+
+/* MODAL */
+.modal {display:none; position:fixed; inset:0; background:rgba(0,0,0,.95); justify-content:center; align-items:center; z-index:200;}
+.modal-content {background:#181818; width:90%; max-width:800px; padding:20px; border-radius:6px;}
+.modal-content iframe {width:100%; height:400px;}
+.modal-content .close {float:right; cursor:pointer; font-size:22px; color:white;}
+
+/* NO RESULTS */
+#no-result {color:white; padding:20px; display:none;}
+</style>
+</head>
+<body>
+
+<script>
+const isOwner = true; // Only you can edit
+</script>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo" onclick="window.scrollTo(0,0)">MyFlix</div>
+  <div class="search-bar">
+    <input id="search" placeholder="Titles, genres, or people..." oninput="searchItems()">
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <h1 id="heroTitle">Featured Movie Title</h1>
+  <div class="hero-buttons">
+    <button onclick="alert('Play clicked')">Play</button>
+    <button onclick="alert('More Info clicked')">More Info</button>
+    <button class="addBtn" onclick="editHero()" style="display:none;">✎ Edit Hero</button>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <button onclick="filterItems('all')">All</button>
+  <button onclick="filterItems('movie')">Movies</button>
+  <button onclick="filterItems('series')">Series</button>
+</div>
+
+<!-- NO RESULTS -->
+<div id="no-result">No results found.</div>
+
+<!-- CATEGORIES -->
+<div id="categories"></div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✖</span>
+    <h2 id="modalTitle"></h2>
+    <iframe id="modalVideo" frameborder="0" allowfullscreen></iframe>
+  </div>
+</div>
+
+<script>
+// INITIAL DATA
+let categoriesData = [
+  {name:"Trending Now", items:[
+    {title:"Movie One", img:"https://via.placeholder.com/300x450", type:"movie", trailer:"https://www.youtube.com/embed/dQw4w9WgXcQ"},
+    {title:"Series One", img:"https://via.placeholder.com/300x450", type:"series", trailer:"https://www.youtube.com/embed/dQw4w9WgXcQ"}
+  ]},
+  {name:"Popular on MyFlix", items:[
+    {title:"Series Two", img:"https://via.placeholder.com/300x450", type:"series", trailer:"https://www.youtube.com/embed/dQw4w9WgXcQ"},
+    {title:"Movie Three", img:"https://via.placeholder.com/300x450", type:"movie", trailer:"https://www.youtube.com/embed/dQw4w9WgXcQ"}
+  ]}
+];
+
+// RENDER CATEGORIES
+function renderCategories(){
+  const container = document.getElementById('categories');
+  container.innerHTML = '';
+  categoriesData.forEach((cat,index)=>{
+    const catDiv = document.createElement('div');
+    catDiv.className = 'category';
+    const title = document.createElement('h2');
+    title.innerText = cat.name;
+    catDiv.appendChild(title);
+
+    if(isOwner){
+      const editTitleBtn = document.createElement('button');
+      editTitleBtn.innerText = "✎ Edit Name";
+      editTitleBtn.className='addBtn';
+      editTitleBtn.onclick = ()=>{
+        const newName = prompt("Edit Category Name:", cat.name);
+        if(newName) {categoriesData[index].name=newName; renderCategories();}
+      }
+      catDiv.appendChild(editTitleBtn);
+    }
+
+    const row = document.createElement('div');
+    row.className='row';
+    cat.items.forEach((item,i)=>{
+      const card = document.createElement('div');
+      card.className = 'card '+item.type;
+      card.innerHTML = `<img src="${item.img}" class="card-img"><div class="title">${item.title}</div>`;
+      card.onclick = ()=>openModal(item.title,item.trailer);
+
+      if(isOwner){
+        const editBtn = document.createElement('button');
+        editBtn.className='editBtn';
+        editBtn.innerText='✎';
+        editBtn.onclick=(e)=>{
+          e.stopPropagation();
+          editCard(index,i);
+        }
+        card.appendChild(editBtn);
+      }
+
+      row.appendChild(card);
+    });
+
+    if(isOwner){
+      const addBtn = document.createElement('button');
+      addBtn.innerText="➕ Add Movie/Series";
+      addBtn.className='addBtn';
+      addBtn.onclick = ()=>addCard(index);
+      catDiv.appendChild(addBtn);
+    }
+
+    catDiv.appendChild(row);
+    container.appendChild(catDiv);
+  });
+}
+
+// OWNER FUNCTIONS
+function editCard(catIndex,itemIndex){
+  const item = categoriesData[catIndex].items[itemIndex];
+  const newTitle = prompt("Edit Title:", item.title);
+  if(newTitle) item.title=newTitle;
+  const newImg = prompt("Edit Image URL:", item.img);
+  if(newImg) item.img=newImg;
+  const newTrailer = prompt("Edit Trailer URL:", item.trailer);
+  if(newTrailer) item.trailer=newTrailer;
+  renderCategories();
+}
+
+function addCard(catIndex){
+  const title = prompt("Movie/Series Title:");
+  if(!title) return;
+  const img = prompt("Image URL:");
+  if(!img) return;
+  const type = prompt("Type: movie or series").toLowerCase();
+  const trailer = prompt("Trailer URL (optional):","");
+  categoriesData[catIndex].items.push({title,img,type,trailer});
+  renderCategories();
+}
+
+function editHero(){
+  const newTitle = prompt("Hero Title:", document.getElementById('heroTitle').innerText);
+  if(newTitle) document.getElementById('heroTitle').innerText = newTitle;
+}
+
+// FILTER & SEARCH
+function filterItems(type){
+  document.querySelectorAll('.card').forEach(card=>{
+    card.style.display = 'flex';
+    if(type!=='all' && !card.classList.contains(type)){
+      card.style.display='none';
+    }
+  });
+}
+
+function searchItems(){
+  const query = document.getElementById('search').value.toLowerCase();
+  let anyVisible = false;
+  document.querySelectorAll('.category').forEach(category=>{
+    let catVisible = false;
+    category.querySelectorAll('.card').forEach(card=>{
+      const title = card.querySelector('.title').innerText.toLowerCase();
+      if(title.includes(query)){
+        card.style.display='flex';
+        catVisible = true;
+      } else card.style.display='none';
+    });
+    category.style.display = catVisible ? 'block' : 'none';
+    if(catVisible) anyVisible = true;
+  });
+  document.getElementById('no-result').style.display = anyVisible ? 'none' : 'block';
+}
+
+// MODAL
+function openModal(title, video){
+  document.getElementById('modal').style.display='flex';
+  document.getElementById('modalTitle').innerText=title;
+  document.getElementById('modalVideo').src=video;
+}
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+  document.getElementById('modalVideo').src='';
+}
+
+// INITIALIZE
+window.onload = ()=>{
+  if(isOwner){
+    document.querySelectorAll('.addBtn').forEach(btn=>btn.style.display='block');
+  }
+  renderCategories();
+}
+</script>
+
+</body>
+</html>
